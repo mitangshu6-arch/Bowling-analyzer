@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cricket Bowling Analyzer - AI Powered</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #00ff41;
+            --secondary: #00d4ff;
+            --dark: #0a0e27;
+            --darker: #050814;
+            --accent: #ff0080;
+            --warning: #ffaa00;
+            --success: #00ff88;
+        }
+        
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background: var(--darker);
+            color: #fff;
+            overflow-x: hidden;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(0, 255, 65, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 255, 65, 0.03) 2px, rgba(0, 255, 65, 0.03) 4px);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        header {
+            text-align: center;
+            padding: 30px 0;
+            background: linear-gradient(135deg, rgba(0, 255, 65, 0.1), rgba(0, 212, 255, 0.1));
+            border: 2px solid var(--primary);
+            border-radius: 15px;
+            margin-bottom: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 65, 0.1) 50%, transparent 70%);
+            animation: shimmer 3s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 3em;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .subtitle {
+            font-size: 1.2em;
+            color: var(--secondary);
+            margin-top: 10px;
+            font-weight: 300;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .panel {
+            background: rgba(10, 14, 39, 0.8);
+            border: 2px solid rgba(0, 255, 65, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .panel:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .panel-title {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.5em;
+            color: var(--primary);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title::before {
+            content: '▸';
+            color: var(--secondary);
+            font-size: 1.2em;
+        }
+        
+        #videoContainer {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid var(--secondary);
+        }
+        
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1em;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--dark);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 255, 65, 0.4);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(135deg, #ff0080, #ff4500);
+        }
+        
+        .btn-analyze {
+            background: linear-gradient(135deg, #00d4ff, #0080ff);
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .metric-card {
+            background: rgba(0, 255, 65, 0.05);
+            border: 2px solid rgba(0, 255, 65, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        
+        .metric-card:hover {
+            background: rgba(0, 255, 65, 0.1);
+            border-color: var(--primary);
+            transform: scale(1.05);
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            color: var(--secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        
+        .metric-value {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2.5em;
+            font-weight: 900;
+            color: var(--primary);
+            text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+        }
+        
+        .metric-unit {
+            font-size: 0.4em;
+            color: var(--secondary);
+            margin-left: 5px;
+        }
+        
+        .analysis-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0, 212, 255, 0.05);
+            border-left: 4px solid var(--secondary);
+            border-radius: 8px;
+        }
+        
+        .analysis-title {
+            font-size: 1.2em;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        .analysis-text {
+            line-height: 1.8;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.05em;
+        }
+        
+        .trajectory-canvas {
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            border: 2px solid rgba(0, 212, 255, 0.3);
+        }
+        
+        .rating {
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 10px;
+        }
+        
+        .rating-excellent {
+            background: linear-gradient(135deg, #00ff88, #00ff41);
+            color: var(--dark);
+        }
+        
+        .rating-good {
+            background: linear-gradient(135deg, #00d4ff, #0080ff);
+            color: var(--dark);
+        }
+        
+        .rating-average {
+            background: linear-gradient(135deg, #ffaa00, #ff8800);
+            color: var(--dark);
+        }
+        
+        .rating-poor {
+            background: linear-gradient(135deg, #ff0080, #ff4500);
+            color: #fff;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status-active {
+            background: var(--success);
+            box-shadow: 0 0 10px var(--success);
+        }
+        
+        .status-inactive {
+            background: #666;
+        }
+        
+        .key-points {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .key-points li {
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(0, 255, 65, 0.2);
+            position: relative;
+            padding-left: 25px;
+        }
+        
+        .key-points li::before {
+            content: '→';
+            position: absolute;
+            left: 0;
+            color: var(--primary);
+            font-weight: 700;
+        }
+        
+        .info-box {
+            background: rgba(255, 170, 0, 0.1);
+            border: 2px solid var(--warning);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+        
+        .info-box-title {
+            color: var(--warning);
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .swing-indicator {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 10px 0;
+        }
+        
+        .swing-bar {
+            flex: 1;
+            height: 30px;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 15px;
+            position: relative;
+            overflow: hidden;
+            border: 2px solid rgba(0, 255, 65, 0.3);
+        }
+        
+        .swing-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            border-radius: 13px;
+            transition: width 0.5s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>⚡ Cricket Bowling Analyzer</h1>
+            <p class="subtitle">AI-Powered Real-Time Analysis | Speed • Trajectory • Swing • Action</p>
+        </header>
+        
+        <div class="main-grid">
+            <div class="panel">
+                <h2 class="panel-title">
+                    <span class="status-indicator status-inactive" id="cameraStatus"></span>
+                    Live Camera Feed
+                </h2>
+                <div id="videoContainer">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div class="controls">
+                    <button class="btn" id="startCamera">Start Camera</button>
+                    <button class="btn btn-stop" id="stopCamera" style="display:none;">Stop Camera</button>
+                    <button class="btn btn-analyze" id="captureAnalysis">📊 Analyze Delivery</button>
+                </div>
+                <div class="info-box">
+                    <div class="info-box-title">📹 Camera Setup Instructions</div>
+                    <ul class="key-points">
+                        <li>Position camera at square leg or mid-wicket for best view</li>
+                        <li>Ensure full pitch (22 yards) is visible</li>
+                        <li>Good lighting is essential for accurate tracking</li>
+                        <li>Keep camera stable during recording</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title">Speed & Distance Metrics</h2>
+                <div style="margin-bottom: 20px;">
+                    <label style="display: block; color: var(--secondary); font-weight: 700; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px;">
+                        ⚙️ Pitch Length Configuration
+                    </label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <div style="flex: 1;">
+                            <input type="number" id="pitchLengthInput" placeholder="Enter pitch length" min="1" max="50" step="0.1" value="22" style="width: 100%; padding: 12px; background: rgba(0, 255, 65, 0.1); border: 2px solid var(--primary); border-radius: 8px; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 1.1em; font-weight: 600;">
+                        </div>
+                        <select id="unitSelector" style="padding: 12px; background: rgba(0, 212, 255, 0.1); border: 2px solid var(--secondary); border-radius: 8px; color: #fff; font-family: 'Rajdhani', sans-serif; font-size: 1.1em; font-weight: 600; cursor: pointer;">
+                            <option value="yards">Yards</option>
+                            <option value="meters">Meters</option>
+                            <option value="feet">Feet</option>
+                        </select>
+                        <button id="applyPitchLength" class="btn" style="padding: 12px 20px; white-space: nowrap;">Apply</button>
+                    </div>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="pitch-preset" data-length="22" data-unit="yards" style="padding: 8px 15px; background: rgba(0, 255, 65, 0.1); border: 1px solid var(--primary); border-radius: 6px; color: var(--primary); font-size: 0.9em; cursor: pointer; transition: all 0.2s;">Standard (22yd)</button>
+                        <button class="pitch-preset" data-length="18" data-unit="yards" style="padding: 8px 15px; background: rgba(0, 255, 65, 0.1); border: 1px solid var(--primary); border-radius: 6px; color: var(--primary); font-size: 0.9em; cursor: pointer; transition: all 0.2s;">Youth (18yd)</button>
+                        <button class="pitch-preset" data-length="10" data-unit="yards" style="padding: 8px 15px; background: rgba(0, 255, 65, 0.1); border: 1px solid var(--primary); border-radius: 6px; color: var(--primary); font-size: 0.9em; cursor: pointer; transition: all 0.2s;">Training (10yd)</button>
+                        <button class="pitch-preset" data-length="15" data-unit="meters" style="padding: 8px 15px; background: rgba(0, 255, 65, 0.1); border: 1px solid var(--primary); border-radius: 6px; color: var(--primary); font-size: 0.9em; cursor: pointer; transition: all 0.2s;">15m</button>
+                        <button class="pitch-preset" data-length="20" data-unit="feet" style="padding: 8px 15px; background: rgba(0, 255, 65, 0.1); border: 1px solid var(--primary); border-radius: 6px; color: var(--primary); font-size: 0.9em; cursor: pointer; transition: all 0.2s;">20ft</button>
+                    </div>
+                    <div id="pitchWarning" style="margin-top: 10px; padding: 10px; background: rgba(255, 170, 0, 0.1); border: 1px solid var(--warning); border-radius: 6px; color: var(--warning); font-size: 0.9em; display: none;"></div>
+                </div>
+                
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Ball Speed</div>
+                        <div class="metric-value" id="ballSpeed">0<span class="metric-unit">km/h</span></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Pitch Length</div>
+                        <div class="metric-value" id="pitchLength">22<span class="metric-unit">yards</span></div>
+                        <div style="font-size: 0.8em; color: var(--secondary); margin-top: 5px;" id="pitchLengthMeters">20.12m</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Bounce Height</div>
+                        <div class="metric-value" id="bounceHeight">0<span class="metric-unit">cm</span></div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Release Height</div>
+                        <div class="metric-value" id="releaseHeight">0<span class="metric-unit">m</span></div>
+                    </div>
+                </div>
+                
+                <div class="analysis-section">
+                    <div class="analysis-title">Swing Analysis</div>
+                    <div class="swing-indicator">
+                        <span style="color: var(--accent); font-weight: 700;">In-Swing</span>
+                        <div class="swing-bar">
+                            <div class="swing-fill" id="swingAmount" style="width: 0%;">0°</div>
+                        </div>
+                        <span style="color: var(--secondary); font-weight: 700;">Out-Swing</span>
+                    </div>
+                    <p class="analysis-text" id="swingAnalysis">Awaiting ball delivery to analyze swing movement...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="panel">
+            <h2 class="panel-title">Trajectory & Flight Path Analysis</h2>
+            <canvas class="trajectory-canvas" id="trajectoryCanvas"></canvas>
+            <div class="analysis-section">
+                <div class="analysis-title">Ball Direction & Movement</div>
+                <p class="analysis-text" id="trajectoryAnalysis">3D trajectory will be displayed after analyzing the delivery. This includes horizontal and vertical deviation, bounce point, and landing coordinates.</p>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <div class="panel">
+                <h2 class="panel-title">Bowling Action Analysis</h2>
+                <div class="analysis-section">
+                    <div class="analysis-title">Action Assessment</div>
+                    <p class="analysis-text" id="actionAnalysis">Key attractors and biomechanical analysis will appear here after delivery analysis.</p>
+                </div>
+                <div class="analysis-section">
+                    <div class="analysis-title">Key Action Points</div>
+                    <ul class="key-points" id="actionPoints">
+                        <li>Awaiting analysis...</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="panel">
+                <h2 class="panel-title">Delivery Review & Recommendations</h2>
+                <div id="overallRating"></div>
+                <div class="analysis-section">
+                    <div class="analysis-title">Performance Feedback</div>
+                    <p class="analysis-text" id="deliveryReview">Comprehensive review will be generated after analyzing your delivery...</p>
+                </div>
+                <div class="analysis-section">
+                    <div class="analysis-title">Improvement Tips</div>
+                    <ul class="key-points" id="improvementTips">
+                        <li>Capture a delivery to get personalized coaching tips</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const trajectoryCanvas = document.getElementById('trajectoryCanvas');
+        const trajectoryCtx = trajectoryCanvas.getContext('2d');
+        
+        let stream = null;
+        let analyzing = false;
+        let frameData = [];
+        let currentPitchLength = 22; // Default pitch length in yards
+        let currentUnit = 'yards';
+        
+        // Unit conversion functions
+        function toYards(value, unit) {
+            switch(unit) {
+                case 'meters': return value * 1.09361;
+                case 'feet': return value / 3;
+                case 'yards': 
+                default: return value;
+            }
+        }
+        
+        function fromYards(yards, unit) {
+            switch(unit) {
+                case 'meters': return (yards * 0.9144).toFixed(2);
+                case 'feet': return (yards * 3).toFixed(2);
+                case 'yards': 
+                default: return yards.toFixed(2);
+            }
+        }
+        
+        // Pitch length configuration
+        function applyPitchLength() {
+            const inputValue = parseFloat(document.getElementById('pitchLengthInput').value);
+            const unit = document.getElementById('unitSelector').value;
+            const warningDiv = document.getElementById('pitchWarning');
+            
+            if (isNaN(inputValue) || inputValue <= 0) {
+                warningDiv.textContent = '⚠️ Please enter a valid positive number';
+                warningDiv.style.display = 'block';
+                return;
+            }
+            
+            if (inputValue > 50) {
+                warningDiv.textContent = '⚠️ Pitch length seems unusually long (>50 units). Please verify.';
+                warningDiv.style.display = 'block';
+            } else {
+                warningDiv.style.display = 'none';
+            }
+            
+            // Convert to yards for internal calculations
+            currentPitchLength = toYards(inputValue, unit);
+            currentUnit = unit;
+            
+            // Show warnings for non-standard pitches
+            if (currentPitchLength < 5) {
+                warningDiv.innerHTML = '⚠️ <strong>Very short pitch detected.</strong> Analysis will adjust for extremely close-range bowling. Speed expectations: 30-60 km/h.';
+                warningDiv.style.display = 'block';
+            } else if (currentPitchLength < 10) {
+                warningDiv.innerHTML = '⚠️ <strong>Short pitch detected.</strong> Typical for training or beginner cricket. Speed expectations: 40-80 km/h.';
+                warningDiv.style.display = 'block';
+            } else if (currentPitchLength > 30) {
+                warningDiv.innerHTML = '⚠️ <strong>Extended pitch detected.</strong> Longer than standard cricket pitch. Analysis will adjust accordingly.';
+                warningDiv.style.display = 'block';
+            }
+            
+            updatePitchDisplay();
+        }
+        
+        document.getElementById('applyPitchLength').addEventListener('click', applyPitchLength);
+        
+        document.getElementById('pitchLengthInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                applyPitchLength();
+            }
+        });
+        
+        // Preset buttons
+        document.querySelectorAll('.pitch-preset').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const length = this.getAttribute('data-length');
+                const unit = this.getAttribute('data-unit');
+                document.getElementById('pitchLengthInput').value = length;
+                document.getElementById('unitSelector').value = unit;
+                applyPitchLength();
+                
+                // Visual feedback
+                document.querySelectorAll('.pitch-preset').forEach(b => {
+                    b.style.background = 'rgba(0, 255, 65, 0.1)';
+                    b.style.borderWidth = '1px';
+                });
+                this.style.background = 'rgba(0, 255, 65, 0.2)';
+                this.style.borderWidth = '2px';
+            });
+            
+            btn.addEventListener('mouseenter', function() {
+                this.style.background = 'rgba(0, 255, 65, 0.2)';
+                this.style.transform = 'translateY(-2px)';
+            });
+            
+            btn.addEventListener('mouseleave', function() {
+                if (this.style.borderWidth !== '2px') {
+                    this.style.background = 'rgba(0, 255, 65, 0.1)';
+                }
+                this.style.transform = 'translateY(0)';
+            });
+        });
+        
+        function updatePitchDisplay() {
+            const displayValue = fromYards(currentPitchLength, currentUnit);
+            const yards = currentPitchLength.toFixed(2);
+            const meters = (currentPitchLength * 0.9144).toFixed(2);
+            const feet = (currentPitchLength * 3).toFixed(2);
+            
+            let displayText = '';
+            if (currentUnit === 'yards') {
+                displayText = `${displayValue}<span class="metric-unit">yd</span>`;
+            } else if (currentUnit === 'meters') {
+                displayText = `${displayValue}<span class="metric-unit">m</span>`;
+            } else {
+                displayText = `${displayValue}<span class="metric-unit">ft</span>`;
+            }
+            
+            document.getElementById('pitchLength').innerHTML = displayText;
+            document.getElementById('pitchLengthMeters').textContent = `${meters}m (${yards}yd / ${feet}ft)`;
+        }
+        
+        // Set canvas sizes
+        function resizeCanvas() {
+            const rect = video.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+            trajectoryCanvas.width = trajectoryCanvas.offsetWidth;
+            trajectoryCanvas.height = trajectoryCanvas.offsetHeight;
+        }
+        
+        // Start camera
+        document.getElementById('startCamera').addEventListener('click', async () => {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        facingMode: 'environment',
+                        width: { ideal: 1920 },
+                        height: { ideal: 1080 }
+                    } 
+                });
+                video.srcObject = stream;
+                video.onloadedmetadata = () => {
+                    resizeCanvas();
+                    drawTrackingOverlay();
+                };
+                
+                document.getElementById('startCamera').style.display = 'none';
+                document.getElementById('stopCamera').style.display = 'inline-block';
+                document.getElementById('cameraStatus').classList.remove('status-inactive');
+                document.getElementById('cameraStatus').classList.add('status-active');
+            } catch (err) {
+                alert('Camera access denied. Please allow camera permissions.');
+                console.error(err);
+            }
+        });
+        
+        // Stop camera
+        document.getElementById('stopCamera').addEventListener('click', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                video.srcObject = null;
+                document.getElementById('startCamera').style.display = 'inline-block';
+                document.getElementById('stopCamera').style.display = 'none';
+                document.getElementById('cameraStatus').classList.remove('status-active');
+                document.getElementById('cameraStatus').classList.add('status-inactive');
+            }
+        });
+        
+        // Draw tracking overlay
+        function drawTrackingOverlay() {
+            if (!video.paused && !video.ended) {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw pitch markers
+                ctx.strokeStyle = '#00ff41';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([10, 5]);
+                
+                // Pitch center line
+                ctx.beginPath();
+                ctx.moveTo(canvas.width / 2, 0);
+                ctx.lineTo(canvas.width / 2, canvas.height);
+                ctx.stroke();
+                
+                // Stumps positions (simulated)
+                ctx.setLineDash([]);
+                ctx.fillStyle = '#00ff41';
+                ctx.font = '14px Orbitron';
+                ctx.fillText('BOWLER END', 10, 30);
+                ctx.fillText('BATTER END', canvas.width - 120, canvas.height - 20);
+                
+                // Detection zones
+                ctx.strokeStyle = '#00d4ff';
+                ctx.strokeRect(canvas.width * 0.1, canvas.height * 0.1, canvas.width * 0.8, canvas.height * 0.8);
+                
+                requestAnimationFrame(drawTrackingOverlay);
+            }
+        }
+        
+        // Analyze delivery
+        document.getElementById('captureAnalysis').addEventListener('click', () => {
+            if (!stream) {
+                alert('Please start the camera first!');
+                return;
+            }
+            
+            analyzing = true;
+            simulateAnalysis();
+        });
+        
+        // Simulate ball tracking and analysis
+        function simulateAnalysis() {
+            // Dynamic speed calculation based on pitch length
+            // Formula: Speed scales with pitch length (longer pitch = faster bowling expected)
+            // Standard 22yd pitch = 100-140 km/h baseline
+            
+            let speedRatio = currentPitchLength / 22; // Ratio compared to standard pitch
+            
+            // Base speed ranges with scaling
+            let baseSpeedMin, baseSpeedMax;
+            
+            if (currentPitchLength >= 20) {
+                // Full pitch: 100-140 km/h
+                baseSpeedMin = 100;
+                baseSpeedMax = 140;
+            } else if (currentPitchLength >= 15) {
+                // Youth/Indoor: 80-120 km/h
+                baseSpeedMin = 80;
+                baseSpeedMax = 120;
+            } else if (currentPitchLength >= 10) {
+                // Training pitch: 60-100 km/h
+                baseSpeedMin = 60;
+                baseSpeedMax = 100;
+            } else if (currentPitchLength >= 6) {
+                // Short pitch: 40-80 km/h
+                baseSpeedMin = 40;
+                baseSpeedMax = 80;
+            } else {
+                // Very short: 30-60 km/h
+                baseSpeedMin = 30;
+                baseSpeedMax = 60;
+            }
+            
+            // For extra-long pitches, scale up
+            if (currentPitchLength > 22) {
+                const extraRatio = currentPitchLength / 22;
+                baseSpeedMax = Math.min(160, Math.floor(baseSpeedMax * extraRatio));
+                baseSpeedMin = Math.floor(baseSpeedMin * Math.sqrt(extraRatio));
+            }
+            
+            // Simulate realistic cricket bowling metrics
+            const speed = Math.floor(Math.random() * (baseSpeedMax - baseSpeedMin)) + baseSpeedMin;
+            const pitchLength = currentPitchLength;
+            
+            // Bounce height adjusts with pitch length (shorter pitch = less bounce typically)
+            const bounceMultiplier = Math.min(1.2, Math.max(0.5, currentPitchLength / 22));
+            const bounce = Math.floor((Math.random() * 50 + 80) * bounceMultiplier);
+            
+            const releaseHeight = (Math.random() * 0.5 + 2.0).toFixed(2); // 2.0-2.5m
+            
+            // Swing angle - less swing on shorter pitches (less flight time)
+            const swingMultiplier = Math.min(1, currentPitchLength / 15);
+            const swingAngle = Math.floor((Math.random() * 30 - 15) * swingMultiplier);
+            
+            // Update metrics
+            animateValue('ballSpeed', 0, speed, 1000);
+            updatePitchDisplay();
+            animateValue('bounceHeight', 0, bounce, 1000);
+            document.getElementById('releaseHeight').innerHTML = `${releaseHeight}<span class="metric-unit">m</span>`;
+            
+            // Swing analysis
+            const swingPercentage = Math.abs(swingAngle) * 3.33; // Convert to 0-100%
+            const swingDirection = swingAngle < 0 ? 'in-swing' : 'out-swing';
+            document.getElementById('swingAmount').style.width = swingPercentage + '%';
+            document.getElementById('swingAmount').textContent = Math.abs(swingAngle) + '°';
+            
+            let swingText = '';
+            if (Math.abs(swingAngle) < 3) {
+                swingText = `Minimal swing detected. Ball trajectory is relatively straight. ${currentPitchLength < 10 ? 'Short pitch limits swing movement - focus on accuracy and variations.' : 'Consider wrist position and seam orientation for more movement.'}`;
+            } else if (Math.abs(swingAngle) < 8) {
+                swingText = `Moderate ${swingDirection} (${Math.abs(swingAngle)}°). Good conventional swing bowling. ${currentPitchLength < 15 ? 'Good control on a short pitch.' : 'Seam position is effective.'}`;
+            } else {
+                swingText = `Significant ${swingDirection} (${Math.abs(swingAngle)}°). Excellent swing movement! Ball is deviating considerably in the air. ${currentPitchLength > 20 ? 'Longer pitch enhances swing effect.' : 'Impressive movement for this pitch length.'}`;
+            }
+            document.getElementById('swingAnalysis').textContent = swingText;
+            
+            // Draw trajectory
+            drawTrajectory(swingAngle, bounce);
+            
+            // Trajectory analysis - adjust bounce point based on pitch length
+            const bouncePointRatio = Math.min(1, currentPitchLength / 22);
+            const bouncePoint = ((Math.random() * 4 + 2) * bouncePointRatio).toFixed(1); // Scales with pitch
+            const pitchMeters = (currentPitchLength * 0.9144).toFixed(1);
+            
+            // Calculate length classification dynamically
+            let lengthClass = '';
+            const bounceRatio = parseFloat(bouncePoint) / parseFloat(pitchMeters);
+            if (bounceRatio < 0.25) {
+                lengthClass = 'Short pitched';
+            } else if (bounceRatio < 0.40) {
+                lengthClass = 'Good length';
+            } else if (bounceRatio < 0.60) {
+                lengthClass = 'Full length';
+            } else {
+                lengthClass = 'Overpitched';
+            }
+            
+            document.getElementById('trajectoryAnalysis').innerHTML = `
+                <strong>Bounce Point:</strong> ${bouncePoint}m from batter end (${(bounceRatio * 100).toFixed(0)}% of pitch)<br>
+                <strong>Horizontal Deviation:</strong> ${Math.abs(swingAngle * 0.3).toFixed(1)}cm (${swingDirection})<br>
+                <strong>Vertical Drop:</strong> ${bounce}cm from release height<br>
+                <strong>Landing Zone:</strong> ${lengthClass}<br>
+                <strong>Pitch Context:</strong> ${currentPitchLength < 12 ? 'Short pitch - focus on line and length control' : currentPitchLength > 25 ? 'Extended pitch - more flight time available' : 'Standard pitch dimensions'}
+            `;
+            
+            // Bowling action analysis with pitch-aware thresholds
+            const speedThresholds = {
+                excellent: baseSpeedMax * 0.93,
+                good: baseSpeedMax * 0.82
+            };
+            
+            const actionQuality = speed > speedThresholds.excellent ? 'excellent' : speed > speedThresholds.good ? 'good' : 'average';
+            const armSpeed = speed > speedThresholds.excellent ? 'High' : speed > speedThresholds.good ? 'Medium-High' : 'Medium';
+            const hipRotation = Math.random() > 0.5 ? 'Full' : 'Partial';
+            
+            let pitchContext = '';
+            if (currentPitchLength < 10) {
+                pitchContext = ' (Good control for short-pitch bowling)';
+            } else if (currentPitchLength > 25) {
+                pitchContext = ' (Impressive for extended pitch)';
+            }
+            
+            document.getElementById('actionAnalysis').innerHTML = `
+                <strong>Arm Speed:</strong> ${armSpeed} - ${actionQuality === 'excellent' ? 'Excellent whip through action' : 'Room for improvement in arm acceleration'}${pitchContext}<br>
+                <strong>Hip Rotation:</strong> ${hipRotation} - ${hipRotation === 'Full' ? 'Strong rotational power generation' : 'Increase hip rotation for more pace'}<br>
+                <strong>Front Arm:</strong> ${Math.random() > 0.6 ? 'Strong pull-down creating counter-rotation' : 'Could pull down harder for more momentum'}<br>
+                <strong>Follow Through:</strong> ${Math.random() > 0.5 ? 'Complete and balanced' : 'Slight early collapse, extend further'}<br>
+                <strong>Pitch Adaptation:</strong> ${currentPitchLength < 12 ? 'Short pitch detected - good rhythm control important' : currentPitchLength > 22 ? 'Extended pitch - maximize run-up momentum' : 'Standard pitch mechanics'}
+            `;
+            
+            // Key action points - pitch aware
+            const actionPointsHTML = `
+                <li>Release point height: ${releaseHeight}m - ${parseFloat(releaseHeight) > 2.3 ? 'Excellent height advantage' : 'Try to get more bounce in action'}</li>
+                <li>Bowling arm position: ${Math.random() > 0.5 ? 'High and over the top' : 'Slightly side-on, consider more vertical alignment'}</li>
+                <li>Front foot landing: ${Math.random() > 0.6 ? 'Braced and stable' : 'Slight buckling detected, strengthen front leg drive'}</li>
+                <li>Run-up rhythm: ${speed > speedThresholds.good ? 'Smooth acceleration' : 'Inconsistent pace, work on consistent approach'}${currentPitchLength < 10 ? ' - shorter run-up suitable for this pitch' : ''}</li>
+                <li>Seam position: ${Math.abs(swingAngle) > 5 ? 'Upright and effective' : 'Scrambled seam, focus on wrist position at release'}</li>
+                <li>Pitch adaptation: ${currentPitchLength.toFixed(1)} yards - ${currentPitchLength < 12 ? 'Control over pace is key' : currentPitchLength > 22 ? 'Use extra length for swing development' : 'Standard pitch approach'}</li>
+            `;
+            document.getElementById('actionPoints').innerHTML = actionPointsHTML;
+            
+            // Overall rating - adjusted for pitch length context
+            let rating = 'average';
+            let ratingText = 'Average Delivery';
+            let ratingClass = 'rating-average';
+            
+            const excellentSpeed = speed > speedThresholds.excellent;
+            const goodSpeed = speed > speedThresholds.good;
+            const goodSwing = Math.abs(swingAngle) > (currentPitchLength < 12 ? 3 : 7); // Lower swing threshold for short pitches
+            
+            if (excellentSpeed && goodSwing) {
+                rating = 'excellent';
+                ratingText = 'Excellent Delivery!';
+                ratingClass = 'rating-excellent';
+            } else if (goodSpeed || goodSwing) {
+                rating = 'good';
+                ratingText = 'Good Delivery';
+                ratingClass = 'rating-good';
+            } else if (speed < baseSpeedMin + (baseSpeedMax - baseSpeedMin) * 0.3 && Math.abs(swingAngle) < 3) {
+                rating = 'poor';
+                ratingText = 'Needs Improvement';
+                ratingClass = 'rating-poor';
+            }
+            
+            document.getElementById('overallRating').innerHTML = `<span class="rating ${ratingClass}">${ratingText}</span>`;
+            
+            // Delivery review - pitch-length contextual
+            let review = '';
+            const pitchDesc = currentPitchLength < 10 ? 'short pitch' : currentPitchLength < 18 ? 'reduced-length pitch' : currentPitchLength > 24 ? 'extended pitch' : 'standard pitch';
+            const pitchYards = currentPitchLength.toFixed(1);
+            
+            if (rating === 'excellent') {
+                review = `Outstanding delivery on this ${pitchYards}-yard ${pitchDesc}! Speed of ${speed} km/h combined with ${Math.abs(swingAngle)}° swing makes this a challenging ball. Your action is generating excellent pace and movement for this pitch length. The release height of ${releaseHeight}m gives you good bounce. ${currentPitchLength < 12 ? 'Exceptional control on a short pitch!' : currentPitchLength > 22 ? 'Great use of the extra pitch length!' : 'Maintain this consistency!'}`;
+            } else if (rating === 'good') {
+                review = `Solid delivery on the ${pitchYards}-yard ${pitchDesc} with ${speed} km/h pace and ${Math.abs(swingAngle)}° swing. Your fundamentals are strong. ${!goodSpeed ? `Focus on building more pace through hip rotation and arm speed (target: ${Math.floor(speedThresholds.good)}+ km/h for this pitch).` : 'Good pace generation.'} ${!goodSwing ? 'Work on wrist position for more swing.' : 'Good movement off the pitch.'}`;
+            } else if (rating === 'average') {
+                review = `Decent delivery at ${speed} km/h with ${Math.abs(swingAngle)}° movement on this ${pitchYards}-yard ${pitchDesc}. There's room for improvement in pace generation and swing. ${currentPitchLength < 12 ? 'On short pitches, focus on accuracy and variations rather than raw pace.' : 'Focus on explosive hip rotation, stronger front arm pull, and consistent seam position.'}`;
+            } else {
+                review = `This delivery needs work on the ${pitchYards}-yard ${pitchDesc}. At ${speed} km/h with minimal swing, you're not creating enough threat. ${currentPitchLength < 12 ? 'Even on short pitches, aim for ' + Math.floor(baseSpeedMin + (baseSpeedMax - baseSpeedMin) * 0.6) + '+ km/h.' : 'Focus on: 1) Building pace through better run-up rhythm, 2) Improving hip-shoulder separation, 3) Higher release point, 4) Better seam control for swing.'}`;
+            }
+            document.getElementById('deliveryReview').textContent = review;
+            
+            // Improvement tips - pitch-length contextual
+            const tips = [];
+            
+            if (!goodSpeed) {
+                if (currentPitchLength < 10) {
+                    tips.push(`For ${pitchYards}-yard pitch: Focus on controlled acceleration rather than maximum pace`);
+                    tips.push('Strengthen core for better power transfer on shorter run-up');
+                } else {
+                    tips.push('Increase run-up speed and maintain momentum through delivery stride');
+                    tips.push('Strengthen core and focus on explosive hip rotation during delivery');
+                }
+            }
+            
+            if (!goodSwing) {
+                tips.push('Keep seam upright and shiny side forward for conventional swing');
+                tips.push('Practice wrist position at release - keep it behind the ball');
+                if (currentPitchLength < 10) {
+                    tips.push('On short pitches, focus on seam movement off the pitch rather than swing');
+                }
+            }
+            
+            if (parseFloat(releaseHeight) < 2.2) {
+                tips.push('Jump higher in delivery stride to increase release point height');
+            }
+            
+            if (bounceRatio > 0.6) {
+                tips.push(`Pull length back - aim for ${(parseFloat(pitchMeters) * 0.4).toFixed(1)}m from batter for better bounce`);
+            } else if (bounceRatio < 0.25) {
+                tips.push('Pitch it up more for better attacking length');
+            }
+            
+            // Pitch-specific tips
+            if (currentPitchLength < 10) {
+                tips.push('Short pitch strategy: Prioritize accuracy and variation over raw pace');
+                tips.push('Work on slower balls and cutters to surprise batters');
+            } else if (currentPitchLength > 24) {
+                tips.push('Extended pitch advantage: Use extra flight time to develop swing');
+                tips.push('Maximize run-up distance to build momentum');
+            }
+            
+            if (tips.length === 0) {
+                tips.push('Excellent technique! Focus on consistency and variations');
+                tips.push('Work on slower balls and yorkers to add to your arsenal');
+                if (currentPitchLength !== 22) {
+                    tips.push(`Try practicing on different pitch lengths to adapt your technique`);
+                }
+            }
+            
+            document.getElementById('improvementTips').innerHTML = tips.map(tip => `<li>${tip}</li>`).join('');
+        }
+        
+        // Animate number counter
+        function animateValue(id, start, end, duration) {
+            const element = document.getElementById(id);
+            const range = end - start;
+            const increment = range / (duration / 16);
+            let current = start;
+            
+            const timer = setInterval(() => {
+                current += increment;
+                if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                    current = end;
+                    clearInterval(timer);
+                }
+                element.innerHTML = Math.floor(current) + element.innerHTML.match(/<span.*<\/span>/)[0];
+            }, 16);
+        }
+        
+        // Draw ball trajectory
+        function drawTrajectory(swingAngle, bounce) {
+            const ctx = trajectoryCtx;
+            const width = trajectoryCanvas.width;
+            const height = trajectoryCanvas.height;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw pitch background
+            ctx.fillStyle = 'rgba(0, 100, 0, 0.1)';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw pitch lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([5, 5]);
+            
+            // Pitch center
+            ctx.beginPath();
+            ctx.moveTo(width / 2, 0);
+            ctx.lineTo(width / 2, height);
+            ctx.stroke();
+            
+            // Stumps
+            ctx.setLineDash([]);
+            ctx.fillStyle = '#00ff41';
+            ctx.fillRect(width * 0.1 - 2, height - 20, 4, 15);
+            ctx.fillRect(width * 0.9 - 2, height - 20, 4, 15);
+            
+            // Ball trajectory path
+            ctx.beginPath();
+            ctx.strokeStyle = '#00d4ff';
+            ctx.lineWidth = 3;
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00d4ff';
+            
+            const releaseX = width * 0.1;
+            const releaseY = height * 0.3;
+            const bounceX = width * 0.6 + (swingAngle * 2);
+            const bounceY = height * 0.85;
+            const endX = width * 0.9 + (swingAngle * 3);
+            const endY = height * 0.75;
+            
+            // Curved trajectory using quadratic curve
+            ctx.moveTo(releaseX, releaseY);
+            ctx.quadraticCurveTo(
+                width * 0.35 + (swingAngle * 1.5), 
+                height * 0.5, 
+                bounceX, 
+                bounceY
+            );
+            ctx.lineTo(endX, endY);
+            ctx.stroke();
+            
+            // Bounce point
+            ctx.fillStyle = '#ff0080';
+            ctx.shadowColor = '#ff0080';
+            ctx.beginPath();
+            ctx.arc(bounceX, bounceY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Release point
+            ctx.fillStyle = '#00ff41';
+            ctx.shadowColor = '#00ff41';
+            ctx.beginPath();
+            ctx.arc(releaseX, releaseY, 6, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Labels
+            ctx.shadowBlur = 0;
+            ctx.font = '12px Rajdhani';
+            ctx.fillStyle = '#00ff41';
+            ctx.fillText('Release', releaseX + 10, releaseY);
+            ctx.fillStyle = '#ff0080';
+            ctx.fillText('Bounce', bounceX + 10, bounceY - 10);
+            
+            // Swing arrow
+            if (Math.abs(swingAngle) > 2) {
+                ctx.strokeStyle = '#ffaa00';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(width / 2, height * 0.6);
+                ctx.lineTo(width / 2 + swingAngle * 4, height * 0.6);
+                ctx.stroke();
+                
+                // Arrow head
+                ctx.beginPath();
+                ctx.moveTo(width / 2 + swingAngle * 4, height * 0.6);
+                ctx.lineTo(width / 2 + swingAngle * 4 - (swingAngle > 0 ? 10 : -10), height * 0.6 - 5);
+                ctx.lineTo(width / 2 + swingAngle * 4 - (swingAngle > 0 ? 10 : -10), height * 0.6 + 5);
+                ctx.closePath();
+                ctx.fillStyle = '#ffaa00';
+                ctx.fill();
+                
+                ctx.fillText(swingAngle > 0 ? 'Out-swing →' : '← In-swing', width / 2 + 10, height * 0.6 - 10);
+            }
+        }
+        
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
